@@ -27,7 +27,7 @@ export default function ExpenseItem({ item, category, onEdit, onDelete }) {
       {/* Right: Amount + Actions */}
       <div style={{ textAlign: 'right', minWidth: '160px' }}>
         <div style={{
-          color: "#dc2626",
+          color: item.type === "income" ? "green" : "red",
           fontWeight: "bold",
           fontSize: '18px',
           marginBottom: '8px'

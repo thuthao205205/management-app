@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { categories } from "../../data/mockData";
 
-export default function ExpenseForm({ editingItem, onClose, onAdd, onUpdate }) {
+export default function ExpenseForm({ editingItem, onClose, onAdd, onUpdate, type = "expense" }) {
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -140,9 +140,9 @@ export default function ExpenseForm({ editingItem, onClose, onAdd, onUpdate }) {
             onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
           >
             <option value="">Chọn danh mục...</option>
-            {categories.filter(c => c.type === "expense").map(c => (
+            {categories.filter(c => c.type === type).map(c => (
               <option key={c.id} value={c.id}>
-                {c.icon} {c.name}
+                {c.name}
               </option>
             ))}
           </select>
