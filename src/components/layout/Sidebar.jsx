@@ -1,24 +1,55 @@
-import { Link } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 
 export default function Sidebar() {
+  const menu = [
+    { path: "/", label: "Dashboard", icon: "📊" },
+    { path: "/expenses", label: "Chi tiêu", icon: "💸" },
+    { path: "/income", label: "Thu nhập", icon: "💰" },
+    { path: "/statistics", label: "Thống kê", icon: "📈" },
+    { path: "/categories", label: "Danh mục", icon: "📂" },
+    { path: "/budget", label: "Ngân sách", icon: "🎯" }
+  ];
+
   return (
     <div style={{
-      width: "220px",
+      width: "240px",
       height: "100vh",
-      background: "#1e293b",
+      background: "#0f172a",
       color: "white",
-      padding: "20px"
+      padding: "20px",
+      display: "flex",
+      flexDirection: "column"
     }}>
-      <h2>💰 Finance</h2>
+      
+      {/* LOGO */}
+      <h2 style={{ marginBottom: "30px", color: "white"}}>
+        💰 Finance
+      </h2>
 
-      <ul style={{ listStyle: "none", padding: 0 }}>
-        <li><Link to="/" style={{ color: "white" }}>Dashboard</Link></li>
-        <li><Link to="/expenses" style={{ color: "white" }}>Chi tiêu</Link></li>
-        <li><Link to="/income" style={{ color: "white" }}>Thu nhập</Link></li>
-        <li><Link to="/statistics" style={{ color: "white" }}>Thống kê</Link></li>
-        <li><Link to="/categories" style={{ color: "white" }}>Danh mục</Link></li>
-        <li><Link to="/budget" style={{ color: "white" }}>Ngân sách</Link></li>
-      </ul>
+      {/* MENU */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        {menu.map(item => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            style={({ isActive }) => ({
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              padding: "10px",
+              borderRadius: "8px",
+              textDecoration: "none",
+              color: "white",
+              background: isActive ? "#1d4ed8" : "transparent",
+              transition: "0.2s"
+            })}
+          >
+            <span>{item.icon}</span>
+            <span>{item.label}</span>
+          </NavLink>
+        ))}
+      </div>
+
     </div>
   );
 }
