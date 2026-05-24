@@ -1,71 +1,87 @@
 import Layout from "../components/layout/Layout";
-import { useState, useMemo } from "react";
-import { categories } from "../data/mockData";
+import { useMemo, useState } from "react";
+import { categories, getIncomesForMonthYear } from "../data/mockData";
 import ExpenseList from "../components/expense/ExpenseList";
 import ExpenseForm from "../components/expense/ExpenseForm";
 
 export default function Income() {
-  // Mock data đa dạng cho test filters - INCOME
-  const [incomes, setIncomes] = useState([
-    { id: 1, name: "Lương tháng 4", amount: 8500000, categoryId: 4, date: "2024-04-25", note: "Công ty ABC" },
-    { id: 2, name: "Thưởng hiệu suất", amount: 2500000, categoryId: 4, date: "2024-04-20", note: "Q1" },
-    { id: 3, name: "Freelance design", amount: 4500000, categoryId: 4, date: "2024-04-19", note: "Upwork" },
-    { id: 4, name: "Lãi tiết kiệm", amount: 650000, categoryId: 4, date: "2024-04-18", note: "Ngân hàng X" },
-    { id: 5, name: "Bán đồ cũ", amount: 1800000, categoryId: 4, date: "2024-04-18", note: "Chợ Tốt" },
-    { id: 6, name: "Lương tháng 3", amount: 8200000, categoryId: 4, date: "2024-03-25", note: "Công ty ABC" },
-    { id: 7, name: "Hoàn tiền Shopee", amount: 550000, categoryId: 4, date: "2024-03-20", note: "" },
-  ]);
-
-  // Filters
   const [month, setMonth] = useState("");
   const [year, setYear] = useState("2024");
   const [categoryId, setCategoryId] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Filtered + Total
+  // engine base data (mock)
+  const engineIncomes = useMemo(() => {
+    if (!month || !year) return [];
+    return getIncomesForMonthYear({ month, year });
+  }, [month, year]);
+
+  // local UI-only edits (không phá ExpenseForm/ExpenseList)
+  const [localEdits, setLocalEdits] = useState({ added: [], updated: [], deletedIds: new Set() });
+
+  const mergedIncomes = useMemo(() => {
+    const baseById = new Map(engineIncomes.map((i) => [i.id, i]));
+
+    for (const up of localEdits.updated) {
+      baseById.set(up.id, up);
+    }
+
+    for (const delId of localEdits.deletedIds) {
+      baseById.delete(delId);
+    }
+
+    return [...baseById.values(), ...localEdits.added];
+  }, [engineIncomes, localEdits]);
+
   const filteredIncomes = useMemo(() => {
-    return incomes.filter(income => {
+    return mergedIncomes.filter((income) => {
       const incomeDate = new Date(income.date);
-      const incomeMonth = (incomeDate.getMonth() + 1).toString().padStart(2, '0');
+      const incomeMonth = (incomeDate.getMonth() + 1).toString().padStart(2, "0");
       const incomeYear = incomeDate.getFullYear().toString();
-      
+
       const matchesMonth = !month || incomeMonth === month;
       const matchesYear = !year || incomeYear === year;
       const matchesCategory = !categoryId || income.categoryId.toString() === categoryId;
-      const matchesSearch = !searchTerm || 
+      const matchesSearch =
+        !searchTerm ||
         income.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (income.note && income.note.toLowerCase().includes(searchTerm.toLowerCase()));
 
       return matchesMonth && matchesYear && matchesCategory && matchesSearch;
     });
-  }, [incomes, month, year, categoryId, searchTerm]);
+  }, [mergedIncomes, month, year, categoryId, searchTerm]);
 
-  const totalAmount = useMemo(() => 
-    filteredIncomes.reduce((sum, i) => sum + i.amount, 0), [filteredIncomes]
-  );
+  const totalAmount = useMemo(() => filteredIncomes.reduce((sum, i) => sum + (i.amount || 0), 0), [filteredIncomes]);
 
-  // Modal state
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
 
   const handleAdd = (newItem) => {
-    setIncomes([...incomes, newItem]);
+    setLocalEdits((prev) => ({ ...prev, added: [...prev.added, newItem] }));
   };
 
   const handleUpdate = (updatedItem) => {
-    setIncomes(incomes.map(i => i.id === updatedItem.id ? updatedItem : i));
+    setLocalEdits((prev) => {
+      const exists = prev.updated.some((x) => x.id === updatedItem.id);
+      const updated = exists ? prev.updated.map((x) => (x.id === updatedItem.id ? updatedItem : x)) : [...prev.updated, updatedItem];
+      return { ...prev, updated };
+    });
   };
 
   const handleDelete = (id) => {
-    if (confirm('Xóa khoản thu này?')) {
-      setIncomes(incomes.filter(i => i.id !== id));
-    }
+    if (!confirm("Xóa khoản thu này?")) return;
+    setLocalEdits((prev) => {
+      const deletedIds = new Set(prev.deletedIds);
+      deletedIds.add(id);
+      return { ...prev, deletedIds };
+    });
   };
 
   const handleEdit = (item) => {
     setEditingItem(item);
     setShowForm(true);
   };
+
 
   return (
     <Layout>
@@ -74,7 +90,11 @@ export default function Income() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <h1 style={{ margin: 0, fontSize: '24px', color: '#1f2937' }}>Quản lý thu nhập</h1>
           <button 
-            onClick={() => { setEditingItem(null); setShowForm(true); }}
+            onClick={() => {
+              setEditingItem(null);
+              setShowForm(true);
+            }}
+
             style={{
               background: '#22c55e', 
               color: 'white', 
@@ -160,12 +180,16 @@ export default function Income() {
         {showForm && (
           <ExpenseForm
             editingItem={editingItem}
-            onClose={() => { setShowForm(false); setEditingItem(null); }}
+            onClose={() => {
+              setShowForm(false);
+              setEditingItem(null);
+            }}
             onAdd={handleAdd}
             onUpdate={handleUpdate}
             type="income"
           />
         )}
+
       </div>
     </Layout>
   );

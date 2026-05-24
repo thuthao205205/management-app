@@ -1,19 +1,15 @@
 import Layout from "../components/layout/Layout";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { getExpensesForMonthYear, getIncomesForMonthYear } from "../data/mockData";
+
 
 const Dashboard = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
-  // Hardcoded data for UI demo
-  const mockSummary = {
-    thu: "10,000,000đ",
-    chi: "7,000,000đ",
-    du: "3,000,000đ"
-  };
-
   const mockPieData = "Pie chart top 5 categories";
+
 
   const mockRecommendations = [
     "⚠️ Bạn đã chi nhiều cho ăn uống (30%)",
@@ -21,22 +17,51 @@ const Dashboard = () => {
     "✅ Thu nhập ổn định, tiếp tục duy trì"
   ];
 
-  const mockRecentTransactions = [
-    { icon: "🍜", name: "Ăn quán", date: "15/11", amount: "-150,000đ", type: "expense" },
-    { icon: "💰", name: "Lương tháng 11", date: "01/11", amount: "+5,000,000đ", type: "income" },
-    { icon: "⛽", name: "Xăng xe", date: "14/11", amount: "-200,000đ", type: "expense" },
-    { icon: "🛒", name: "Mua sắm Shopee", date: "13/11", amount: "-450,000đ", type: "expense" },
-    { icon: "💸", name: "Thuê nhà", date: "10/11", amount: "-2,000,000đ", type: "expense" },
-    { icon: "📚", name: "Freelance", date: "12/11", amount: "+1,200,000đ", type: "income" }
-  ];
 
-  const months = Array.from({length: 12}, (_, i) => `${i+1}`.padStart(2, '0'));
+
+  const months = Array.from({ length: 12 }, (_, i) => `${i + 1}`.padStart(2, "0"));
   const years = ["2023", "2024", "2025"];
+
+  const { totalIncomeLabel, totalExpenseLabel, balanceLabel, recentTransactions } = useMemo(() => {
+    const incomes = getIncomesForMonthYear({ month: selectedMonth, year: selectedYear });
+    const expenses = getExpensesForMonthYear({ month: selectedMonth, year: selectedYear });
+
+    const sum = (arr) => arr.reduce((acc, it) => acc + Number(it.amount || 0), 0);
+    const totalIncome = sum(incomes);
+    const totalExpense = sum(expenses);
+    const netBalance = totalIncome - totalExpense;
+
+    const fmt = (n) => `${Number(n).toLocaleString("vi-VN")}đ`;
+    const totalIncomeLabel = fmt(totalIncome);
+    const totalExpenseLabel = fmt(totalExpense);
+    const balanceLabel = fmt(netBalance);
+
+    const tx = [...incomes.map((t) => ({ ...t, type: "income" })), ...expenses.map((t) => ({ ...t, type: "expense" }))];
+    const recentTransactions = tx
+      .sort((a, b) => (a.date < b.date ? 1 : -1))
+      .slice(0, 6)
+      .map((t) => ({
+        icon: t.type === "income" ? "💰" : "💸",
+        name: t.name,
+        date: t.date ? t.date.split("-").slice(1).join("/") : "",
+        amount: `${t.type === "income" ? "+" : "-"}${Number(t.amount || 0).toLocaleString("vi-VN")}đ`,
+        type: t.type
+      }));
+
+    return { totalIncomeLabel, totalExpenseLabel, balanceLabel, recentTransactions };
+  }, [selectedMonth, selectedYear]);
+
 
   return (
     <Layout>
-      <div style={{padding: "24px", maxWidth: "1200px", margin: "0 auto"}}>
-        <h1 style={{fontSize: "28px", fontWeight: "bold", marginBottom: "24px", color: "#111827"}}>Dashboard</h1>
+      <div style={{ padding: "24px", maxWidth: "1200px", margin: "0 auto" }}>
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ fontSize: "28px", fontWeight: "bold", color: "#111827" }}>Dashboard</div>
+          <div style={{ color: "#6b7280", fontSize: 14, marginTop: 2 }}>
+            Tự động cập nhật theo tháng/năm (mock)
+          </div>
+        </div>
+
 
         {/* Row 1: Summary Cards */}
         <div>
@@ -61,17 +86,20 @@ const Dashboard = () => {
           </div>
           <div style={{display: "flex", gap: "20px", flexWrap: "wrap"}}>
             <div style={{ background: "#22c55e", padding: "24px", color: "white", flex: "1", minWidth: "200px", borderRadius: "12px", textAlign: "center" }}>
-              <div style={{fontSize: "24px", fontWeight: "bold", marginBottom: "4px"}}>{mockSummary.thu}</div>
+              <div style={{fontSize: "24px", fontWeight: "bold", marginBottom: "4px"}}>{totalIncomeLabel}</div>
               <div style={{fontSize: "14px", opacity: 0.9}}>Tổng thu tháng này</div>
+
             </div>
             <div style={{ background: "#ef4444", padding: "24px", color: "white", flex: "1", minWidth: "200px", borderRadius: "12px", textAlign: "center" }}>
-              <div style={{fontSize: "24px", fontWeight: "bold", marginBottom: "4px"}}>{mockSummary.chi}</div>
+              <div style={{fontSize: "24px", fontWeight: "bold", marginBottom: "4px"}}>{totalExpenseLabel}</div>
               <div style={{fontSize: "14px", opacity: 0.9}}>Tổng chi tháng này</div>
             </div>
             <div style={{ background: "#3b82f6", padding: "24px", color: "white", flex: "1", minWidth: "200px", borderRadius: "12px", textAlign: "center" }}>
-              <div style={{fontSize: "24px", fontWeight: "bold", marginBottom: "4px"}}>{mockSummary.du}</div>
+              <div style={{fontSize: "24px", fontWeight: "bold", marginBottom: "4px"}}>{balanceLabel}</div>
               <div style={{fontSize: "14px", opacity: 0.9}}>Số dư</div>
             </div>
+
+
           </div>
         </div>
 
@@ -102,7 +130,8 @@ const Dashboard = () => {
             <Link to="/expenses" style={{padding: "8px 16px", background: "#3b82f6", color: "white", textDecoration: "none", borderRadius: "6px", fontWeight: "500"}}>Xem tất cả</Link>
           </div>
           <div style={{maxHeight: "400px", overflowY: "auto"}}>
-            {mockRecentTransactions.slice(0, 6).map((trans, idx) => (
+            {recentTransactions.slice(0, 6).map((trans, idx) => (
+
               <div key={idx} style={{display: "flex", alignItems: "center", gap: "16px", padding: "16px 24px", borderBottom: "1px solid #f3f4f6", ":hover": {backgroundColor: "#f9fafb"}}}>
                 <span style={{fontSize: "24px"}}>{trans.icon}</span>
                 <div style={{flex: 1}}>
