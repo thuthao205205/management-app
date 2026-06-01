@@ -1,20 +1,20 @@
-// services/expenseService.js
+// services/incomeService.js
 
-import { expenses } from "../data/mockData";
+import { incomes } from "../data/mockData";
 
-export const expenseService = {
+export const incomeService = {
   getAll() {
-    return expenses;
+    return incomes;
   },
 
   getById(id) {
-    return expenses.find(
+    return incomes.find(
       (item) => item.id === id
     );
   },
 
   getByMonthYear(month, year) {
-    return expenses.filter((item) => {
+    return incomes.filter((item) => {
       const date = new Date(item.date);
 
       return (

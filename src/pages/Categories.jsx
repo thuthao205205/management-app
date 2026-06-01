@@ -102,9 +102,9 @@ export default function Categories() {
 
         {/* Danh sách danh mục */}
         <div style={{ marginTop: 18 }}>
-          {filtered.every((c) => c.isDefault) ? (
+          {customFiltered.length === 0 ? (
             <EmptyState
-              title="Chưa có danh mục tùy chỉnh nào"
+              title="Chưa có danh mục nào"
               buttonText="Tạo danh mục đầu tiên"
               onClick={openAdd}
             />

@@ -18,12 +18,12 @@ export default function AppRouter() {
 
 
   const RequireAuth = ({ children }) => {
-    if (!user) return <Navigate to="/login" replace />;
+    if (!user) return <Navigate to="/" replace />;
     return children;
   };
 
   const PublicOnly = ({ children }) => {
-    if (user) return <Navigate to="/" replace />;
+    if (user) return <Navigate to="/dashboard" replace />;
     return children;
   };
 
@@ -32,7 +32,7 @@ export default function AppRouter() {
       <Routes>
         {/* Auth */}
         <Route
-          path="/login"
+          path="/"
           element={
             <PublicOnly>
               <Login />
@@ -50,7 +50,7 @@ export default function AppRouter() {
 
         {/* Main */}
         <Route
-          path="/"
+          path="/dashboard"
           element={
             <RequireAuth>
               <Dashboard />

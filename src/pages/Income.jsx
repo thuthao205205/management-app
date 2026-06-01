@@ -1,6 +1,6 @@
 import Layout from "../components/layout/Layout";
 import { useMemo, useState } from "react";
-import { categories, getIncomesForMonthYear } from "../data/mockData";
+import { categories, incomes } from "../data/mockData";
 import ExpenseList from "../components/expense/ExpenseList";
 import ExpenseForm from "../components/expense/ExpenseForm";
 

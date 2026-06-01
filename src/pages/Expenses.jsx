@@ -1,6 +1,9 @@
 import Layout from "../components/layout/Layout";
 import { useMemo, useState } from "react";
-import { categories, getExpensesForMonthYear } from "../data/mockData";
+import {
+  expenses as mockExpenses,
+  categories
+} from "../data/mockData";
 import ExpenseList from "../components/expense/ExpenseList";
 import ExpenseForm from "../components/expense/ExpenseForm";
 
@@ -16,12 +19,21 @@ export default function Expenses() {
   const [localEdits, setLocalEdits] = useState([]);
 
   const engineExpenses = useMemo(() => {
-    const m = month ? Number(month) : now.getMonth() + 1;
-    const y = year ? Number(year) : now.getFullYear();
-    return getExpensesForMonthYear({ month: m, year: y });
-  }, [month, year]);
+  const m = month ? Number(month) : now.getMonth() + 1;
+  const y = year ? Number(year) : now.getFullYear();
 
-  const expenses = useMemo(() => {
+  return mockExpenses.filter((item) => {
+    const d = new Date(item.date);
+
+    return (
+      d.getMonth() + 1 === m &&
+      d.getFullYear() === y
+    );
+  });
+}, [month, year]);
+
+
+  const currentExpense = useMemo(() => {
     if (!localEdits.length) return engineExpenses;
     const map = new Map(engineExpenses.map((e) => [e.id, e]));
     for (const it of localEdits) map.set(it.id, it);
@@ -31,7 +43,7 @@ export default function Expenses() {
   const filteredExpenses = useMemo(() => {
     const s = searchTerm.trim().toLowerCase();
 
-    return expenses.filter((expense) => {
+    return currentExpense.filter((expense) => {
       const expenseDate = new Date(expense.date);
       const expenseMonth = (expenseDate.getMonth() + 1).toString().padStart(2, "0");
       const expenseYear = expenseDate.getFullYear().toString();
@@ -46,7 +58,7 @@ export default function Expenses() {
 
       return matchesMonth && matchesYear && matchesCategory && matchesSearch;
     });
-  }, [expenses, month, year, categoryId, searchTerm]);
+  }, [currentExpense, month, year, categoryId, searchTerm]);
 
   const totalAmount = useMemo(() => filteredExpenses.reduce((sum, e) => sum + e.amount, 0), [filteredExpenses]);
 

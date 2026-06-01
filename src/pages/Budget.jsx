@@ -1,15 +1,16 @@
 import Layout from "../components/layout/Layout";
 import { useMemo, useState } from "react";
 import { EmptyState } from "../components/common/EmptyState";
+import { categories } from "../data/mockData";
+
+
 import {
   calculateBudgetOverview,
   categories as allCategories,
-  formatMonthYearLabel,
   getDaysInMonth,
-  getBudgetProgressFillColor,
-  getBudgetStatus,
   getMissingBudgetExpenseCategoryIdsForMonth
 } from "../data/mockData";
+
 
 const formatMoney = (n) => {
   const num = Number(n) || 0;
@@ -21,6 +22,33 @@ const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
 function pad2(n) {
   return String(n).padStart(2, "0");
 }
+
+const getBudgetColor = (ratio) => {
+  if (ratio < 0.6) {
+    return {
+      bg: "#dcfce7",
+      text: "#15803d"
+    };
+  }
+
+  if (ratio < 0.8) {
+    return {
+      bg: "#fef3c7",
+      text: "#b45309"
+    };
+  }
+
+  return {
+    bg: "#fee2e2",
+    text: "#dc2626"
+  };
+};
+
+const getBudgetProgressFillColor = (ratio) => {
+  if (ratio < 0.6) return "#10b981";
+  if (ratio < 0.8) return "#f59e0b";
+  return "#ef4444";
+};
 
 export default function Budget() {
   const now = new Date();
@@ -34,12 +62,7 @@ export default function Budget() {
     return calculateBudgetOverview({ month: selectedMonth, year: selectedYear, categories: expenseCategories });
   }, [expenseCategories, selectedMonth, selectedYear]);
 
-  const { budgetsForMonth, budgets, spentByCategory, totalLimit, totalSpent, remaining, totalUsageRatio, daysInMonth } = {
-    budgetsForMonth: overview.budgets,
-    ...overview
-  };
-
-  const remainingTextColor = remaining >= 0 ? "#16a34a" : "#dc2626";
+  const { spentByCategory, daysInMonth } = overview;
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -48,30 +71,39 @@ export default function Budget() {
   // Local UI-only budget edits (since engine is mock read-only)
   const [localBudgets, setLocalBudgets] = useState([]);
 
-  const budgetsMergedForMonth = useMemo(() => {
-    // merge engine budgets + local overrides
-    const base = budgetsForMonth;
-    if (!localBudgets.length) return base;
+  const mergedBudgetsForMonth = useMemo(() => {
+    // Budget nguồn (mock engine) cho UI demo
+    // NOTE: lưu/xóa/sửa sẽ thao tác lên localBudgets; engine chỉ cung cấp danh sách để render lần đầu.
+    const engineBudgets = overview.budgets || [];
+    if (!localBudgets.length) return engineBudgets;
+
     const key = (b) => `${b.categoryId}-${b.month}-${b.year}`;
-    const map = new Map(base.map((b) => [key(b), b]));
-    for (const b of localBudgets) {
-      map.set(key(b), b);
-    }
+    const map = new Map(engineBudgets.map((b) => [key(b), b]));
+    for (const b of localBudgets) map.set(key(b), b);
     return Array.from(map.values());
-  }, [budgetsForMonth, localBudgets]);
+  }, [overview.budgets, localBudgets]);
 
-  // Recompute totals based on merged budgets
-  const mergedTotalLimit = useMemo(
-    () => budgetsMergedForMonth.reduce((sum, b) => sum + Number(b.limitAmount || 0), 0),
-    [budgetsMergedForMonth]
+  const budgetsForMonth = mergedBudgetsForMonth;
+
+  const totalLimitMerged = useMemo(
+    () => budgetsForMonth.reduce((sum, b) => sum + Number(b.limitAmount || 0), 0),
+    [budgetsForMonth]
   );
-  const mergedTotalSpent = useMemo(
-    () => budgetsMergedForMonth.reduce((sum, b) => sum + Number(spentByCategory.get(b.categoryId) || 0), 0),
-    [budgetsMergedForMonth, spentByCategory]
+  const totalSpentMerged = useMemo(
+    () => budgetsForMonth.reduce((sum, b) => sum + Number(spentByCategory.get(b.categoryId) || 0), 0),
+    [budgetsForMonth, spentByCategory]
   );
 
-  const mergedRemaining = mergedTotalLimit - mergedTotalSpent;
-  const mergedUsageRatio = mergedTotalLimit > 0 ? mergedTotalSpent / mergedTotalLimit : 0;
+  const remainingMerged = totalLimitMerged - totalSpentMerged;
+  const totalUsageRatioMerged =
+    totalLimitMerged > 0
+      ? totalSpentMerged / totalLimitMerged
+      : 0;
+
+  const remainingTextColor =
+    remainingMerged >= 0 ? "#16a34a" : "#dc2626";
+
+
 
   const [formCategoryId, setFormCategoryId] = useState(expenseCategories[0]?.id || 1);
   const [formLimit, setFormLimit] = useState(0);
@@ -130,7 +162,8 @@ export default function Budget() {
       const key = (b) => `${b.categoryId}-${b.month}-${b.year}`;
       const next = [...prev];
       if (isEditing) {
-        const idx = next.findIndex((b) => b.id === editingBudgetId);
+        const idx = next.findIndex((b) => String(b.id) === String(editingBudgetId));
+
         const updated = {
           id: editingBudgetId || Date.now(),
           categoryId: Number(formCategoryId),
@@ -167,7 +200,7 @@ export default function Budget() {
   }, [expenseCategories, selectedMonth, selectedYear]);
 
   const overThresholdItems = useMemo(() => {
-    return budgetsMergedForMonth
+    return mergedBudgetsForMonth
       .map((b) => {
         const spent = Number(spentByCategory.get(b.categoryId) || 0);
         const ratio = b.limitAmount > 0 ? spent / b.limitAmount : 0;
@@ -175,7 +208,7 @@ export default function Budget() {
       })
       .filter((x) => x.ratio >= 0.8)
       .sort((a, b) => b.ratio - a.ratio);
-  }, [budgetsMergedForMonth, spentByCategory]);
+  }, [mergedBudgetsForMonth, spentByCategory]);
 
   const monthsOptions = useMemo(() => Array.from({ length: 12 }, (_, i) => i + 1), []);
   const yearsOptions = useMemo(() => [Number(selectedYear) - 1, Number(selectedYear), Number(selectedYear) + 1], [selectedYear]);
@@ -238,7 +271,8 @@ export default function Budget() {
         <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
           <div style={{ background: "#ffffff", padding: 24, borderRadius: 12, flex: 1, minWidth: 220, boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
             <div style={{ fontSize: 14, color: "#6b7280", fontWeight: 700 }}>Tổng hạn mức</div>
-            <div style={{ fontSize: 26, fontWeight: 900, color: "#6b7280", marginTop: 6 }}>{formatMoney(totalLimit)}</div>
+            <div style={{ fontSize: 26, fontWeight: 900, color: "#6b7280", marginTop: 6 }}>{formatMoney(totalLimitMerged)}</div>
+
           </div>
 
           <div style={{ background: "#ffffff", padding: 24, borderRadius: 12, flex: 1, minWidth: 220, boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
@@ -248,17 +282,19 @@ export default function Budget() {
                 fontSize: 26,
                 fontWeight: 900,
                 color:
-                  totalUsageRatio < 0.6 ? "#10b981" : totalUsageRatio < 0.8 ? "#d97706" : "#dc2626",
+                  totalUsageRatioMerged < 0.6 ? "#10b981" : totalUsageRatioMerged < 0.8 ? "#d97706" : "#dc2626",
                 marginTop: 6
               }}
             >
-              {formatMoney(totalSpent)}
+              {formatMoney(totalSpentMerged)}
             </div>
+
           </div>
 
           <div style={{ background: "#ffffff", padding: 24, borderRadius: 12, flex: 1, minWidth: 220, boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
             <div style={{ fontSize: 14, color: "#6b7280", fontWeight: 700 }}>Còn lại</div>
-            <div style={{ fontSize: 26, fontWeight: 900, color: remainingTextColor, marginTop: 6 }}>{formatMoney(remaining)}</div>
+            <div style={{ fontSize: 26, fontWeight: 900, color: remainingTextColor, marginTop: 6 }}>{formatMoney(remainingMerged)}</div>
+
             <div style={{ color: "#6b7280", marginTop: 4, fontSize: 13, fontWeight: 700 }}>
               Còn {daysInMonth} ngày trong tháng
             </div>
@@ -291,7 +327,7 @@ export default function Budget() {
                   const ratio = b.limitAmount > 0 ? spent / b.limitAmount : 0;
                   const pct = Math.round(ratio * 100);
                   const cl = getBudgetColor(ratio);
-                  const fillColor = getProgressFillColor(ratio);
+                  const fillColor = getBudgetProgressFillColor(ratio);
                   const fillWidth = clamp(pct, 0, 100);
                   const progressStyle = {
                     height: 10,
@@ -393,7 +429,15 @@ export default function Budget() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => setBudgets((prev) => prev.filter((x) => x.id !== b.id))}
+                            onClick={() => {
+                              // Xóa trong local state; cũng dùng cho record engine (vì record engine sẽ được thay bằng localBudgets theo key)
+                              setLocalBudgets((prev) => {
+                                const key = (bb) => `${bb.categoryId}-${bb.month}-${bb.year}`;
+                                const targetKey = key(b);
+                                return prev.filter((x) => key(x) !== targetKey);
+                              });
+                            }}
+
                             title="Xóa ngân sách"
                             style={{
                               border: "1px solid #fca5a5",
