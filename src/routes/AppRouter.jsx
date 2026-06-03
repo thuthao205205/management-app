@@ -13,9 +13,21 @@ import Profile from "../pages/Profile";
 import { useAuth } from "../context/AuthContext";
 
 export default function AppRouter() {
-  const { user } = useAuth();
-
-
+  const { user, loading } = useAuth();
+  if (loading) {
+  return (
+    <div
+      style={{
+        height: "100vh",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center"
+      }}
+    >
+      Đang tải...
+    </div>
+  );
+}
 
   const RequireAuth = ({ children }) => {
     if (!user) return <Navigate to="/" replace />;

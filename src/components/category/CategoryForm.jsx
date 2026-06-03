@@ -76,7 +76,7 @@ export default function CategoryForm({
     if (!isValid) return;
 
     const payload = {
-      id: initialCategory?.id ?? Date.now(),
+      id: initialCategory?.id,
       name: name.trim(),
       type: formType,
       icon,

@@ -1,45 +1,92 @@
-// services/authService.js
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  updateProfile
+} from "firebase/auth";
 
-const STORAGE_KEY = "finance_user";
+import {
+  doc,
+  setDoc, 
+  getDoc
+} from "firebase/firestore";
+import {
+  createDefaultCategories
+} from "./categoryService";
+import { auth, db } from "./firebase";
 
-export const authService = {
-  async signIn(email, password) {
-    const user = {
-      id: 1,
-      name: email.split("@")[0],
-      email
-    };
+export const updateUserProfile = async ({
+  displayName,
+  photoURL
+}) => {
+  await updateProfile(auth.currentUser, {
+    displayName,
+    photoURL
+  });
+};
 
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(user)
+export const registerUser =
+async (
+  username,
+  email,
+  password
+) => {
+
+  const userCredential =
+    await createUserWithEmailAndPassword(
+      auth,
+      email,
+      password
     );
 
-    return user;
-  },
+  const user =
+    userCredential.user;
 
-  async register(name, email, password) {
-    const user = {
-      id: Date.now(),
-      name,
+  await setDoc(
+    doc(db, "users", user.uid),
+    {
+      username,
       email
-    };
+    }
+  );
 
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(user)
+  await createDefaultCategories(
+    user.uid
+  );
+
+  return {
+    uid: user.uid,
+    username,
+    email
+  };
+};
+
+export const loginUser = async (
+  email,
+  password
+) => {
+  const credential =
+    await signInWithEmailAndPassword(
+      auth,
+      email,
+      password
     );
 
-    return user;
-  },
+  return credential.user;
+};
 
-  async signOut() {
-    localStorage.removeItem(STORAGE_KEY);
-  },
+export const logoutUser = async () => {
+  await signOut(auth);
+};
 
-  getCurrentUser() {
-    const user = localStorage.getItem(STORAGE_KEY);
+export const getUserProfile = async (uid) => {
+  const docRef = doc(db, "users", uid);
 
-    return user ? JSON.parse(user) : null;
+  const docSnap = await getDoc(docRef);
+
+  if (!docSnap.exists()) {
+    return null;
   }
+
+  return docSnap.data();
 };

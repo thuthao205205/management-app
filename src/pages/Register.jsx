@@ -5,12 +5,13 @@ import { useAuth } from "../context/AuthContext";
 
 export default function Register() {
   const navigate = useNavigate();
-  const { signIn } = useAuth();
+  const { register } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [password2, setPassword2] = useState("");
   const [error, setError] = useState("");
+  const [name, setName] = useState("");
 
   const isValid =
     email.trim() &&
@@ -18,6 +19,10 @@ export default function Register() {
     password === password2;
 
   const handleRegister = async () => {
+    if (!name.trim()) {
+      setError("Vui lòng nhập tên người dùng");
+      return;
+    }
     if (!email.trim()) {
       setError("Vui lòng nhập email");
       return;
@@ -35,12 +40,28 @@ export default function Register() {
 
     setError("");
 
-    await signIn({
-      email,
-      password
-    });
+    try {
+      await register({
+        username: name,
+        email,
+        password
+      });
 
-    navigate("/", { replace: true });
+      navigate("/dashboard", {
+        replace: true
+      });
+
+    } catch (err) {
+      console.error(err);
+
+      if (err.code === "auth/email-already-in-use") {
+        setError("Email đã được sử dụng");
+      } else if (err.code === "auth/invalid-email") {
+        setError("Email không hợp lệ");
+      } else {
+        setError("Đăng ký thất bại");
+      }
+    }
   };
 
   return (
@@ -69,6 +90,16 @@ export default function Register() {
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <input
+          type="name"
+          name="name"
+          autoComplete="name"
+          placeholder="Tên đăng nhập"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          style={inputStyle}
+        />
+
         <input
           type="email"
           name="email"

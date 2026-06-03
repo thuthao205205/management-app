@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
   const navigate = useNavigate();
-  const { signIn, signInWithGoogle } = useAuth();
+  const { login } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -26,9 +26,9 @@ export default function Login() {
     try {
       setLoading(true);
 
-      await signIn({
+      await login({
         email,
-        password,
+        password
       });
 
       navigate("/dashboard", {
@@ -37,25 +37,6 @@ export default function Login() {
     } catch (err) {
       console.error(err);
       setError("Đăng nhập thất bại");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGoogleLogin = async () => {
-    try {
-      setLoading(true);
-
-      if (signInWithGoogle) {
-        await signInWithGoogle();
-      }
-
-      navigate("/dashboard", {
-        replace: true,
-      });
-    } catch (err) {
-      console.error(err);
-      setError("Đăng nhập Google thất bại");
     } finally {
       setLoading(false);
     }
@@ -137,23 +118,6 @@ export default function Login() {
             {loading ? "Đang đăng nhập..." : "Đăng nhập"}
           </button>
         </form>
-
-        <button
-          onClick={handleGoogleLogin}
-          disabled={loading}
-          style={{
-            width: "100%",
-            padding: "12px",
-            border: "none",
-            borderRadius: "8px",
-            background: "#db4437",
-            color: "white",
-            fontWeight: "600",
-            cursor: "pointer",
-          }}
-        >
-          Đăng nhập với Google
-        </button>
 
         <p
           style={{

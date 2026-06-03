@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Layout from "../components/layout/Layout";
 import { useAuth } from "../context/AuthContext";
+import { updateUserProfile } from "../services/authService";
 
 function abbreviateName(name) {
   const parts = (name || "").trim().split(/\s+/).filter(Boolean);
@@ -37,24 +38,37 @@ function formatDateByPattern(date, pattern) {
 }
 
 export default function Profile() {
-  const { user: authUser, signOut } = useAuth();
-
-  // Mock user fallback (vì dự án đang dùng mockAuth/localStorage)
-  const baseUser = useMemo(() => {
-    return {
-      name: authUser?.name || "Nguyễn Văn A",
-      email: authUser?.email || "user@example.com",
-      memberSince: "15/04/2024",
-      // photoURL có thể không có trong mockAuth
-      photoURL: authUser?.photoURL || "",
-    };
-  }, [authUser]);
+  const { user: authUser, logout, loading } = useAuth();
+  if (loading) {
+    return (
+      <Layout>
+        <div>Đang tải...</div>
+      </Layout>
+    );
+  }
+  console.log(authUser);
+  const baseUser = useMemo(() => ({
+    name: authUser?.username || "",
+    email: authUser?.email || "",
+    memberSince: "",
+    photoURL: authUser?.photoURL || ""
+  }), [authUser]);
 
   const [displayName, setDisplayName] = useState(baseUser.name);
   const [photoURL, setPhotoURL] = useState(baseUser.photoURL);
 
   const [savedName, setSavedName] = useState(baseUser.name);
   const [savedPhotoURL, setSavedPhotoURL] = useState(baseUser.photoURL);
+
+  useEffect(() => {
+    if (authUser) {
+      setDisplayName(authUser.username || "");
+      setSavedName(authUser.username || "");
+
+      setPhotoURL(authUser.photoURL || "");
+      setSavedPhotoURL(authUser.photoURL || "");
+    }
+  }, [authUser]);
 
   const nameChanged = displayName.trim() !== savedName;
   const avatarChanged = (photoURL || "") !== (savedPhotoURL || "");
@@ -80,11 +94,20 @@ export default function Profile() {
     passwordsMatch;
 
   const onSaveInfo = async () => {
-    // Demo: cập nhật local UI state (vì mockAuth không hỗ trợ update photoURL/name qua Firebase)
-    if (!infoDirty) return;
-    setSavedName(displayName.trim());
-    setSavedPhotoURL(photoURL);
-    // NOTE: nếu dự án được cấu hình Firebase thật, có thể dùng upload lên Storage + updateProfile/auth cập nhật photoURL
+    try {
+      await updateUserProfile({
+        displayName,
+        photoURL
+      });
+
+      setSavedName(displayName);
+      setSavedPhotoURL(photoURL);
+
+      alert("Cập nhật thành công");
+    } catch (err) {
+      console.error(err);
+      alert("Cập nhật thất bại");
+    }
   };
 
   const fileInputRef = useRef(null);
@@ -154,7 +177,7 @@ export default function Profile() {
     // Demo: chỉ logout
     setDeleteDialogOpen(false);
     setDeleteConfirmEmail("");
-    await signOut();
+    await logout();
   };
 
   // Sidebar/Topbar title theo yêu cầu
@@ -749,7 +772,7 @@ export default function Profile() {
           >
             <button
               type="button"
-              onClick={signOut}
+              onClick={logout}
               style={{
                 width: "100%",
                 padding: "14px 16px",

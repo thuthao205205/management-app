@@ -3,10 +3,10 @@ import { useAuth } from "../../context/AuthContext";
 
 export default function Navbar() {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, logout } = useAuth();
 
   const handleLogout = async () => {
-    await signOut();
+    await logout();
     navigate("/", { replace: true });
   };
 
