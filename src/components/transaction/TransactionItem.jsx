@@ -1,4 +1,4 @@
-export default function ExpenseItem({ item, category, onEdit, onDelete }) {
+export default function TransactionItem({ item, category, onEdit, onDelete }) {
   return (
     <div style={{
       background: "white",
