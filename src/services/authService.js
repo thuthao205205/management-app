@@ -25,8 +25,7 @@ export const updateUserProfile = async ({
   });
 };
 
-export const registerUser =
-async (
+export const registerUser = async (
   username,
   email,
   password
@@ -39,12 +38,12 @@ async (
       password
     );
 
-  const user =
-    userCredential.user;
+  const user = userCredential.user;
 
   await setDoc(
     doc(db, "users", user.uid),
     {
+      uid: user.uid,
       username,
       email
     }
@@ -55,7 +54,6 @@ async (
   );
 
   return {
-    uid: user.uid,
     username,
     email
   };
@@ -88,5 +86,7 @@ export const getUserProfile = async (uid) => {
     return null;
   }
 
-  return docSnap.data();
+  return {
+    uid: docSnap.id,
+    ...docSnap.data()};
 };

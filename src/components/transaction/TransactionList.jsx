@@ -1,7 +1,7 @@
-import ExpenseItem from "./ExpenseItem";
+import ExpenseItem from "./TransactionItem";
 import { groupExpensesByDate, formatDateHeader } from "../../utils/groupExpenses";
 
-export default function ExpenseList({ expenses, categories, onEdit, onDelete }) {
+export default function TransactionList({ expenses, categories, onEdit, onDelete }) {
   const grouped = groupExpensesByDate(expenses);
 
   if (expenses.length === 0) {

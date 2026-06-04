@@ -1,41 +1,70 @@
 import Layout from "../components/layout/Layout";
-import { useMemo, useState } from "react";
-import { categories, incomes } from "../data/mockData";
-import ExpenseList from "../components/expense/ExpenseList";
-import ExpenseForm from "../components/expense/ExpenseForm";
+import { useMemo, useState, useEffect } from "react";
+import TransactionList from "../components/transaction/TransactionList";
+import TransactionForm from "../components/transaction/TransactionForm";
+import { useAuth } from "../context/AuthContext";
+import {
+  getTransactions,
+  addTransaction,
+  updateTransaction,
+  deleteTransaction
+} from "../services/transactionService";
+import {
+  getCategories
+} from "../services/categoryService";
+
 
 export default function Income() {
   const [month, setMonth] = useState("");
-  const [year, setYear] = useState("2024");
+  const now = new Date();
+  const [year, setYear] = useState(
+    String(now.getFullYear())
+  );
   const [categoryId, setCategoryId] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const { user } = useAuth();
+  const [incomes, setIncomes] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // engine base data (mock)
-  const engineIncomes = useMemo(() => {
-    if (!month || !year) return [];
-    return getIncomesForMonthYear({ month, year });
-  }, [month, year]);
+  useEffect(() => {
+    if (!user) return;
 
-  // local UI-only edits (không phá ExpenseForm/ExpenseList)
-  const [localEdits, setLocalEdits] = useState({ added: [], updated: [], deletedIds: new Set() });
+    loadData();
+  }, [user]);
 
-  const mergedIncomes = useMemo(() => {
-    const baseById = new Map(engineIncomes.map((i) => [i.id, i]));
+  const loadData = async () => {
+    try {
+      setLoading(true);
 
-    for (const up of localEdits.updated) {
-      baseById.set(up.id, up);
+      const transactionData =
+        await getTransactions(user.uid);
+
+      const categoryData =
+        await getCategories(user.uid);
+
+      setIncomes(
+        transactionData.filter(
+          item => item.type === "income"
+        )
+      );
+
+      setCategories(
+        categoryData.filter(
+          item => item.type === "income"
+        )
+      );
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    for (const delId of localEdits.deletedIds) {
-      baseById.delete(delId);
-    }
-
-    return [...baseById.values(), ...localEdits.added];
-  }, [engineIncomes, localEdits]);
-
+  
   const filteredIncomes = useMemo(() => {
-    return mergedIncomes.filter((income) => {
-      const incomeDate = new Date(income.date);
+    return incomes.filter((income) => {
+      const incomeDate = new Date(income.transactionDate);
       const incomeMonth = (incomeDate.getMonth() + 1).toString().padStart(2, "0");
       const incomeYear = incomeDate.getFullYear().toString();
 
@@ -49,32 +78,67 @@ export default function Income() {
 
       return matchesMonth && matchesYear && matchesCategory && matchesSearch;
     });
-  }, [mergedIncomes, month, year, categoryId, searchTerm]);
+  }, [incomes, month, year, categoryId, searchTerm]);
 
   const totalAmount = useMemo(() => filteredIncomes.reduce((sum, i) => sum + (i.amount || 0), 0), [filteredIncomes]);
 
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
 
-  const handleAdd = (newItem) => {
-    setLocalEdits((prev) => ({ ...prev, added: [...prev.added, newItem] }));
+  const handleAdd = async (newItem) => {
+    try {
+      const created =
+        await addTransaction({
+          ...newItem,
+          uid: user.uid,
+          type: "income"
+        });
+
+      setIncomes((prev) => [
+        ...prev,
+        created
+      ]);
+    } catch (error) {
+      console.error(error);
+    }
   };
 
-  const handleUpdate = (updatedItem) => {
-    setLocalEdits((prev) => {
-      const exists = prev.updated.some((x) => x.id === updatedItem.id);
-      const updated = exists ? prev.updated.map((x) => (x.id === updatedItem.id ? updatedItem : x)) : [...prev.updated, updatedItem];
-      return { ...prev, updated };
-    });
+  const handleUpdate = async (
+    updatedItem
+  ) => {
+    try {
+      await updateTransaction(
+        updatedItem.id,
+        updatedItem
+      );
+
+      setIncomes((prev) =>
+        prev.map((item) =>
+          item.id === updatedItem.id
+            ? updatedItem
+            : item
+        )
+      );
+    } catch (error) {
+      console.error(error);
+    }
   };
 
-  const handleDelete = (id) => {
-    if (!confirm("Xóa khoản thu này?")) return;
-    setLocalEdits((prev) => {
-      const deletedIds = new Set(prev.deletedIds);
-      deletedIds.add(id);
-      return { ...prev, deletedIds };
-    });
+  const handleDelete = async ( id ) => {
+    if (!confirm("Xóa khoản thu này?"))
+      return;
+
+    try {
+      await deleteTransaction(id);
+
+      setIncomes((prev) =>
+        prev.filter(
+          (item) => item.id !== id
+        )
+      );
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const handleEdit = (item) => {
@@ -169,16 +233,20 @@ export default function Income() {
         </div>
 
         {/* List */}
-        <ExpenseList 
-          expenses={filteredIncomes}
-          categories={categories}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-        />
+        {loading ? (
+          <p>Đang tải dữ liệu...</p>
+        ) : (
+          <TransactionList
+            expenses={filteredIncomes}
+            categories={categories}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        )}
 
         {/* Modal */}
         {showForm && (
-          <ExpenseForm
+          <TransactionForm
             editingItem={editingItem}
             onClose={() => {
               setShowForm(false);
@@ -186,6 +254,7 @@ export default function Income() {
             }}
             onAdd={handleAdd}
             onUpdate={handleUpdate}
+            categories={categories}
             type="income"
           />
         )}

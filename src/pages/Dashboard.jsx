@@ -1,13 +1,43 @@
 import Layout from "../components/layout/Layout";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
 import { Link } from "react-router-dom";
-
-import { expenseService } from "../services/expenseService";
-import { incomeService } from "../services/incomeService";
-import { alerts, categories } from "../data/mockData";
-
+import { getTransactions } from "../services/transactionService";
+import { getCategories, createDefaultCategories } from "../services/categoryService";
 
 export default function Dashboard() {
+  const [transactions, setTransactions] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const { user } = useAuth();
+
+
+  useEffect(() => {
+    if (!user) return;
+
+    const loadData = async () => {
+      const [transactionData, categoryData] =
+        await Promise.all([
+          getTransactions(user.uid),
+          getCategories(user.uid),
+        ]);
+
+      // Ensure default categories exist for new users
+      if (categoryData.length === 0) {
+        await createDefaultCategories(user.uid);
+      }
+
+      const finalCategories =
+        categoryData.length === 0
+          ? await getCategories(user.uid)
+          : categoryData;
+
+      setTransactions(transactionData);
+      setCategories(finalCategories);
+    };
+
+    loadData();
+  }, [user]);
+
   const [selectedMonth, setSelectedMonth] = useState(
     new Date().getMonth() + 1
   );
@@ -20,8 +50,11 @@ export default function Dashboard() {
     { length: 12 },
     (_, i) => i + 1
   );
-
-  const years = [2024, 2025, 2026];
+  const currentYear = new Date().getFullYear();
+  const years = Array.from(
+    { length: 5 },
+    (_, i) => currentYear - 2 + i
+  );
 
   const formatMoney = (amount) => {
     return amount.toLocaleString("vi-VN") + " đ";
@@ -34,18 +67,29 @@ export default function Dashboard() {
   recentTransactions,
   topCategories,
 } = useMemo(() => {
+  const monthIncomes = transactions.filter((item) => {
+    if (item.type !== "income") return false;
 
-  const monthIncomes =
-    incomeService.getByMonthYear(
-      selectedMonth,
-      selectedYear
-    );
+    const date = new Date(item.transactionDate);
+    if (Number.isNaN(date.getTime())) return false;
 
-  const monthExpenses =
-    expenseService.getByMonthYear(
-      selectedMonth,
-      selectedYear
+    return (
+      date.getMonth() + 1 === selectedMonth &&
+      date.getFullYear() === selectedYear
     );
+  });
+
+  const monthExpenses = transactions.filter((item) => {
+    if (item.type !== "expense") return false;
+
+    const date = new Date(item.transactionDate);
+    if (Number.isNaN(date.getTime())) return false;
+
+    return (
+      date.getMonth() + 1 === selectedMonth &&
+      date.getFullYear() === selectedYear
+    );
+  });
 
   const totalIncome = monthIncomes.reduce(
     (sum, item) => sum + item.amount,
@@ -57,10 +101,10 @@ export default function Dashboard() {
     0
   );
 
-  const balance =
-    totalIncome - totalExpense;
+  const balance = totalIncome - totalExpense;
 
-  const transactions = [
+  // Avoid TDZ: don't redeclare `transactions` inside this memo.
+  const monthTransactions = [
     ...monthIncomes.map((item) => ({
       ...item,
       type: "income",
@@ -71,42 +115,28 @@ export default function Dashboard() {
     })),
   ];
 
-  const recentTransactions =
-    transactions
-      .sort(
-        (a, b) =>
-          new Date(b.date) -
-          new Date(a.date)
-      )
-      .slice(0, 6);
+  const recentTransactions = monthTransactions
+    .sort((a, b) => {
+      const da = new Date(a.transactionDate).getTime();
+      const db = new Date(b.transactionDate).getTime();
+      return db - da;
+    })
+    .slice(0, 6);
 
   const categorySummary = {};
-
   monthExpenses.forEach((expense) => {
     categorySummary[expense.categoryId] =
-      (categorySummary[
-        expense.categoryId
-      ] || 0) + expense.amount;
+      (categorySummary[expense.categoryId] || 0) + expense.amount;
   });
 
-  const topCategories =
-    Object.entries(categorySummary)
-      .map(
-        ([categoryId, amount]) => ({
-          category:
-            categories.find(
-              (c) =>
-                c.id ===
-                Number(categoryId)
-            ),
-          amount,
-        })
-      )
-      .sort(
-        (a, b) =>
-          b.amount - a.amount
-      )
-      .slice(0, 5);
+  const topCategories = Object.entries(categorySummary)
+    .map(([categoryId, amount]) => {
+      const category = categories.find((c) => String(c.id) === String(categoryId));
+      return { category, amount };
+    })
+    .filter((x) => x.category)
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 5);
 
   return {
     totalIncome,
@@ -115,7 +145,8 @@ export default function Dashboard() {
     recentTransactions,
     topCategories,
   };
-}, [selectedMonth, selectedYear]);
+}, [transactions, categories, selectedMonth, selectedYear]);
+
 
   return (
     <Layout>
@@ -334,22 +365,8 @@ export default function Dashboard() {
               Gợi ý thông minh
             </h3>
 
-            {alerts.map((alert) => (
-              <div
-                key={alert.id}
-                style={{
-                  marginBottom: "10px",
-                  padding: "12px",
-                  background:
-                    "#eff6ff",
-                  borderRadius: "8px",
-                  borderLeft:
-                    "4px solid #3b82f6",
-                }}
-              >
-                {alert.message}
-              </div>
-            ))}
+            {[]?.map(() => null)}
+
           </div>
         </div>
 

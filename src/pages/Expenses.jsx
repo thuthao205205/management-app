@@ -1,64 +1,111 @@
 import Layout from "../components/layout/Layout";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import TransactionList from "../components/transaction/TransactionList";
+import TransactionForm from "../components/transaction/TransactionForm";
+import { useAuth } from "../context/AuthContext";
+
 import {
-  expenses as mockExpenses,
-  categories
-} from "../data/mockData";
-import ExpenseList from "../components/expense/ExpenseList";
-import ExpenseForm from "../components/expense/ExpenseForm";
+  getTransactions,
+  addTransaction,
+  updateTransaction,
+  deleteTransaction
+} from "../services/transactionService";
+
+import {
+  getCategories
+} from "../services/categoryService";
 
 export default function Expenses() {
+  const { user } = useAuth();
+
+  const [expense, setExpense] = useState([]);
+  const [categories, setCategories] = useState([]);
   const now = new Date();
 
   const [month, setMonth] = useState("");
   const [year, setYear] = useState(String(now.getFullYear()));
   const [categoryId, setCategoryId] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    if (!user) return;
 
-  // UI-only local overrides (so Add/Edit/Delete still works without backend)
-  const [localEdits, setLocalEdits] = useState([]);
+    loadData();
+  }, [user]);
 
-  const engineExpenses = useMemo(() => {
-  const m = month ? Number(month) : now.getMonth() + 1;
-  const y = year ? Number(year) : now.getFullYear();
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const transactionData =
+        await getTransactions(user.uid);
+      const categoryData =
+        await getCategories(user.uid);
+      setExpense(
+        transactionData.filter(
+          (item) => item.type === "expense"
+        )
+      );
+      setCategories(
+        categoryData.filter(
+          (item) => item.type === "expense"
+        )
+      );
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  return mockExpenses.filter((item) => {
-    const d = new Date(item.date);
-
-    return (
-      d.getMonth() + 1 === m &&
-      d.getFullYear() === y
-    );
-  });
-}, [month, year]);
-
-
-  const currentExpense = useMemo(() => {
-    if (!localEdits.length) return engineExpenses;
-    const map = new Map(engineExpenses.map((e) => [e.id, e]));
-    for (const it of localEdits) map.set(it.id, it);
-    return Array.from(map.values());
-  }, [engineExpenses, localEdits]);
 
   const filteredExpenses = useMemo(() => {
     const s = searchTerm.trim().toLowerCase();
 
-    return currentExpense.filter((expense) => {
-      const expenseDate = new Date(expense.date);
-      const expenseMonth = (expenseDate.getMonth() + 1).toString().padStart(2, "0");
-      const expenseYear = expenseDate.getFullYear().toString();
+    return expense.filter((item) => {
+      const d = new Date(item.date || item.transactionDate);
 
-      const matchesMonth = !month || expenseMonth === month;
-      const matchesYear = !year || expenseYear === year;
-      const matchesCategory = !categoryId || expense.categoryId.toString() === categoryId;
+
+      const expenseMonth =
+        String(d.getMonth() + 1).padStart(2, "0");
+
+      const expenseYear =
+        String(d.getFullYear());
+
+      const matchesMonth =
+        !month ||
+        expenseMonth === month;
+
+      const matchesYear =
+        !year ||
+        expenseYear === year;
+
+      const matchesCategory =
+        !categoryId ||
+        item.categoryId === categoryId;
+
       const matchesSearch =
         !s ||
-        expense.name.toLowerCase().includes(s) ||
-        (expense.note && expense.note.toLowerCase().includes(s));
+        item.name
+          ?.toLowerCase()
+          .includes(s) ||
+        item.note
+          ?.toLowerCase()
+          .includes(s);
 
-      return matchesMonth && matchesYear && matchesCategory && matchesSearch;
+      return (
+        matchesMonth &&
+        matchesYear &&
+        matchesCategory &&
+        matchesSearch
+      );
     });
-  }, [currentExpense, month, year, categoryId, searchTerm]);
+  }, [
+    expense,
+    month,
+    year,
+    categoryId,
+    searchTerm
+  ]);
 
   const totalAmount = useMemo(() => filteredExpenses.reduce((sum, e) => sum + e.amount, 0), [filteredExpenses]);
 
@@ -66,26 +113,62 @@ export default function Expenses() {
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
 
-  const handleAdd = (newItem) => {
-    setLocalEdits((prev) => [...prev, newItem]);
+  const handleAdd = async (newItem) => {
+    try {
+      const created =
+        await addTransaction({
+          ...newItem,
+          uid: user.uid,
+          type: "expense"
+        });
+
+      setExpense((prev) => [
+        ...prev,
+        created
+      ]);
+    } catch (error) {
+      console.error(error);
+    }
   };
 
-  const handleUpdate = (updatedItem) => {
-    setLocalEdits((prev) => {
-      const idx = prev.findIndex((x) => x.id === updatedItem.id);
-      if (idx >= 0) {
-        const next = [...prev];
-        next[idx] = updatedItem;
-        return next;
-      }
-      return [...prev, updatedItem];
-    });
+  const handleUpdate = async (
+    updatedItem
+  ) => {
+    try {
+      await updateTransaction(
+        updatedItem.id,
+        updatedItem
+      );
+
+      setExpense((prev) =>
+        prev.map((item) =>
+          item.id === updatedItem.id
+            ? updatedItem
+            : item
+        )
+      );
+    } catch (error) {
+      console.error(error);
+    }
   };
 
-  const handleDelete = (id) => {
-    if (!confirm("Xóa khoản chi này?")) return;
+  const handleDelete = async (id) => {
+    if (
+      !confirm("Xóa khoản chi này?")
+    )
+      return;
 
-    setLocalEdits((prev) => prev.filter((e) => e.id !== id));
+    try {
+      await deleteTransaction(id);
+
+      setExpense((prev) =>
+        prev.filter(
+          (item) => item.id !== id
+        )
+      );
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const handleEdit = (item) => {
@@ -184,11 +267,18 @@ export default function Expenses() {
         </div>
 
         {/* List */}
-        <ExpenseList expenses={filteredExpenses} categories={categories} onEdit={handleEdit} onDelete={handleDelete} />
+        {loading ? ( 
+          <p>Đang tải dữ liệu...</p>) : (
+          <TransactionList
+          expenses={filteredExpenses}
+          categories={categories}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />)}
 
         {/* Modal */}
         {showForm && (
-          <ExpenseForm
+          <TransactionForm
             editingItem={editingItem}
             onClose={() => {
               setShowForm(false);
@@ -196,6 +286,8 @@ export default function Expenses() {
             }}
             onAdd={handleAdd}
             onUpdate={handleUpdate}
+            categories={categories}
+            type="expense"
           />
         )}
       </div>

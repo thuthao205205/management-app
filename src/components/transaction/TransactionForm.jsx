@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import { categories } from "../../data/mockData";
 
-export default function ExpenseForm({ editingItem, onClose, onAdd, onUpdate, type = "expense" }) {
+export default function TransactionForm({ editingItem, onClose, onAdd, onUpdate, categories, type = "expense" }) {
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -13,7 +12,7 @@ export default function ExpenseForm({ editingItem, onClose, onAdd, onUpdate, typ
     if (editingItem) {
       setName(editingItem.name || "");
       setAmount((editingItem.amount || 0).toString());
-      setCategoryId((editingItem.categoryId || "").toString());
+      setCategoryId(editingItem.categoryId || "");
       setDate(editingItem.date || new Date().toISOString().split("T")[0]);
       setNote(editingItem.note || "");
     } else {
@@ -32,19 +31,20 @@ export default function ExpenseForm({ editingItem, onClose, onAdd, onUpdate, typ
       return;
     }
 
-    const expenseData = {
+    const transactionData = {
       id: editingItem?.id || Date.now(),
       name: name.trim(),
-      amount: parseInt(amount),
-      categoryId: parseInt(categoryId),
-      date: date,
-      note: note.trim()
+      amount: Number(amount),
+      categoryId,
+      transactionDate: date,
+      note: note.trim(),
+      type
     };
 
     if (editingItem) {
-      onUpdate(expenseData);
+      onUpdate(transactionData);
     } else {
-      onAdd(expenseData);
+      onAdd(transactionData);
     }
     onClose();
   };
@@ -140,7 +140,7 @@ export default function ExpenseForm({ editingItem, onClose, onAdd, onUpdate, typ
             onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
           >
             <option value="">Chọn danh mục...</option>
-            {categories.filter(c => c.type === type).map(c => (
+            {(categories || []).filter(c => c.type === type).map(c => (
               <option key={c.id} value={c.id}>
                 {c.name}
               </option>

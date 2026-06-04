@@ -11,10 +11,7 @@ import {
   deleteCategory,
   createDefaultCategories
 } from "../services/categoryService";
-import {
-  collection,
-  addDoc
-} from "firebase/firestore";
+import { hasTransactionsInCategory } from "../services/transactionService";
 export default function Categories() {
   const { user } = useAuth();
 
@@ -110,10 +107,20 @@ export default function Categories() {
   const handleRequestDelete =
     async (categoryId) => {
       try {
+        const isUsed =
+          await hasTransactionsInCategory(
+            user.uid,
+            categoryId
+          );
+        if (isUsed) {
+          alert(
+            "Danh mục đang được sử dụng trong giao dịch nên không thể xóa."
+          );
+          return;
+        }
         await deleteCategory(
           categoryId
         );
-
         setCategories((prev) =>
           prev.filter(
             (c) => c.id !== categoryId
@@ -187,7 +194,7 @@ export default function Categories() {
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {customFiltered.map((item) => {
-                const canDelete = !item.isDefault && item.transactionCount === 0;
+                const canDelete = !item.isDefault;
                 return (
                   <CategoryItem
                     key={item.id}
@@ -199,7 +206,7 @@ export default function Categories() {
                       if (ok) handleRequestDelete(item.id);
                     }}
                     disableDelete={!canDelete}
-                    deleteDisabledReason={!canDelete ? `Còn ${item.transactionCount} giao dịch đang dùng` : ""}
+                    deleteDisabledReason={ item.isDefault ? "Không thể xóa danh mục mặc định" : ""}
                   />
                 );
               })}
