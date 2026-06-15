@@ -24,6 +24,7 @@ export default function Navbar() {
         justifyContent: "space-between",
         padding: "0 20px",
         gap: 16,
+        marginLeft: "10px",
       }}
     >
       {/* Page title + date */}
@@ -53,52 +54,7 @@ export default function Navbar() {
       {/* System utilities */}
 
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <button
-          type="button"
-          style={{
-            position: "relative",
-            width: 40,
-            height: 40,
-            borderRadius: 12,
-            background: "transparent",
-            border: "1px solid rgba(148, 163, 184, 0.35)",
-            cursor: "pointer",
-            color: "#334155",
-            fontWeight: 800,
-          }}
-          aria-label="Notifications"
-        >
-          <span style={{ fontSize: 18 }}>🔔</span>
-          <span
-            style={{
-              position: "absolute",
-              top: 8,
-              right: 9,
-              width: 9,
-              height: 9,
-              borderRadius: 999,
-              background: "#ef4444",
-              boxShadow: "0 0 0 2px #fff",
-            }}
-          />
-        </button>
-
-        <button
-          type="button"
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: 12,
-            background: "transparent",
-            border: "1px solid rgba(148, 163, 184, 0.35)",
-            cursor: "pointer",
-            color: "#334155",
-            fontWeight: 800,
-          }}
-          aria-label="Help"
-        >
-          <span style={{ fontSize: 18 }}>?</span>
-        </button>
+        
 
         {user && (
           <button
@@ -107,11 +63,13 @@ export default function Navbar() {
             style={{
               padding: "8px 12px",
               borderRadius: 12,
-              border: "1px solid rgba(148, 163, 184, 0.35)",
-              background: "#fff",
+              border: "1px solid rgba(37, 99, 235, 0.5)",
+              background: "#2563eb",
               cursor: "pointer",
               fontWeight: 800,
-              color: "#334155",
+              color: "#fff",
+              boxShadow: "0 6px 18px rgba(37, 99, 235, 0.25)",
+
             }}
             aria-label="Logout"
           >

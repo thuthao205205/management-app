@@ -133,33 +133,26 @@ export default function Categories() {
 
   return (
     <Layout>
-      <div style={{ maxWidth: 980, margin: "0 auto" }}>
+      <div className="container">
         {/* Topbar */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
           <div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: "#111827", marginBottom: 2 }}>Quản lý danh mục</div>
-            <div style={{ color: "#6b7280", fontSize: 14 }}>Tùy chỉnh phân loại thu nhập và chi tiêu</div>
+            <div className="page-title" style={{ marginBottom: 2, fontSize: 28 }}>
+              Quản lý danh mục
+            </div>
+            <div className="page-subtitle" style={{ fontSize: 14 }}>
+              Tùy chỉnh phân loại thu nhập và chi tiêu
+            </div>
           </div>
 
-          <button
-            type="button"
-            onClick={openAdd}
-            style={{
-              padding: "10px 16px",
-              border: "1px solid #93c5fd",
-              background: "#eff6ff",
-              color: "#1d4ed8",
-              borderRadius: 12,
-              fontWeight: 700,
-              cursor: "pointer"
-            }}
-          >
+          <button type="button" className="btn btn-primary" onClick={openAdd}>
             + Thêm danh mục
           </button>
         </div>
 
+
         {/* Tabs */}
-        <div style={{ display: "flex", gap: 12, borderBottom: "1px solid #e5e7eb", marginBottom: 14 }}>
+        <div style={{ display: "flex", gap: 12, borderBottom: "1px solid var(--border)", marginBottom: 14 }}>
           {[
             { key: "expense", label: "Chi tiêu" },
             { key: "income", label: "Thu nhập" }
@@ -174,7 +167,7 @@ export default function Categories() {
                 background: "transparent",
                 cursor: "pointer",
                 fontWeight: 800,
-                color: tab === t.key ? "#0f172a" : "#6b7280",
+                color: tab === t.key ? "var(--text-h)" : "var(--text)",
                 borderBottom: tab === t.key ? "3px solid #22c55e" : "3px solid transparent"
               }}
             >
@@ -182,6 +175,7 @@ export default function Categories() {
             </button>
           ))}
         </div>
+
 
         {/* Danh sách danh mục */}
         <div style={{ marginTop: 18 }}>

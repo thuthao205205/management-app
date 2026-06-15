@@ -15,8 +15,8 @@ import {
 
 
 export default function Income() {
-  const [month, setMonth] = useState("");
   const now = new Date();
+  const [month, setMonth] = useState(String(now.getMonth() + 1).padStart(2, "0"));
   const [year, setYear] = useState(
     String(now.getFullYear())
   );
@@ -149,31 +149,24 @@ export default function Income() {
 
   return (
     <Layout>
-      <div>
+      <div className="container">
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h1 style={{ margin: 0, fontSize: '24px', color: '#1f2937' }}>Quản lý thu nhập</h1>
+          <h1 className="page-title" style={{ margin: 0 }}>
+            Quản lý thu nhập
+          </h1>
           <button 
             onClick={() => {
               setEditingItem(null);
               setShowForm(true);
             }}
-
-            style={{
-              background: '#22c55e', 
-              color: 'white', 
-              padding: '12px 24px', 
-              borderRadius: '8px', 
-              border: 'none', 
-              fontWeight: '600',
-              fontSize: '14px',
-              cursor: 'pointer',
-              boxShadow: '0 2px 4px rgba(34,197,94,0.3)'
-            }}
+            className="btn btn-primary"
+            style={{ padding: '12px 24px', fontSize: '14px' }}
           >
             + Thêm thu nhập
           </button>
         </div>
+
 
         {/* Filters row */}
         <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
@@ -263,3 +256,4 @@ export default function Income() {
     </Layout>
   );
 }
+

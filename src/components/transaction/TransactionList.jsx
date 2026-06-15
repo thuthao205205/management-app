@@ -12,15 +12,14 @@ export default function TransactionList({ expenses, categories, onEdit, onDelete
     <div>
       {Object.entries(grouped).map(([date, items]) => (
         <div key={date} style={{ marginBottom: '32px' }}>
-          <div style={{
-            background: '#f1f5f9',
+          <div className="surface" style={{
             padding: '12px 16px',
             fontWeight: 'bold',
-            color: '#374151',
-            borderRadius: '6px 6px 0 0',
+            borderRadius: '12px 12px 0 0',
             marginBottom: '-1px'
           }}>
-            {formatDateHeader(date)} ({items.length} khoản)
+
+            Tổng số giao dịch ({items.length} khoản)
           </div>
           {items.map(item => (
             <ExpenseItem 
@@ -31,6 +30,7 @@ export default function TransactionList({ expenses, categories, onEdit, onDelete
               onDelete={onDelete}
             />
           ))}
+
         </div>
       ))}
     </div>

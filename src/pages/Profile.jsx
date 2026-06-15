@@ -183,15 +183,8 @@ export default function Profile() {
   // Sidebar/Topbar title theo yêu cầu
   return (
     <Layout>
-      <div style={{ maxWidth: 760, margin: "0 auto" }}>
-        <h1
-          style={{
-            marginBottom: 24,
-            fontSize: 24,
-            color: "#1f2937",
-            fontWeight: 700,
-          }}
-        >
+      <div className="container" style={{ maxWidth: 760 }}>
+        <h1 className="page-title" style={{ fontSize: 24, marginBottom: 24 }}>
           Hồ sơ & Cài đặt
         </h1>
 

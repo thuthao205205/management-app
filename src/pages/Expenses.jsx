@@ -22,7 +22,7 @@ export default function Expenses() {
   const [categories, setCategories] = useState([]);
   const now = new Date();
 
-  const [month, setMonth] = useState("");
+  const [month, setMonth] = useState(String(now.getMonth() + 1).padStart(2, "0"));
   const [year, setYear] = useState(String(now.getFullYear()));
   const [categoryId, setCategoryId] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -178,30 +178,24 @@ export default function Expenses() {
 
   return (
     <Layout>
-      <div>
+      <div className="container">
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-          <h1 style={{ margin: 0, fontSize: "24px", color: "#1f2937" }}>Quản lý chi tiêu</h1>
+          <h1 className="page-title" style={{ margin: 0 }}>
+            Quản lý chi tiêu
+          </h1>
           <button
             onClick={() => {
               setEditingItem(null);
               setShowForm(true);
             }}
-            style={{
-              background: "#3b82f6",
-              color: "white",
-              padding: "12px 24px",
-              borderRadius: "8px",
-              border: "none",
-              fontWeight: "600",
-              fontSize: "14px",
-              cursor: "pointer",
-              boxShadow: "0 2px 4px rgba(59,130,246,0.3)"
-            }}
+            className="btn btn-primary"
+            style={{ padding: "12px 24px", fontSize: "14px" }}
           >
             + Thêm chi tiêu
           </button>
         </div>
+
 
         {/* Filters row */}
         <div style={{ display: "flex", gap: "12px", marginBottom: "16px", flexWrap: "wrap" }}>
@@ -210,7 +204,7 @@ export default function Expenses() {
             onChange={(e) => setMonth(e.target.value)}
             style={{ padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: "6px", minWidth: "120px" }}
           >
-            <option value="">Month</option>
+            <option value="">Tháng</option>
             {Array.from({ length: 12 }, (_, i) => (
               <option key={i + 1} value={(i + 1).toString().padStart(2, "0")}>
                 Th {i + 1}
@@ -294,4 +288,5 @@ export default function Expenses() {
     </Layout>
   );
 }
+
 

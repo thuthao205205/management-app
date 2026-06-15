@@ -6,6 +6,7 @@ export default function TransactionForm({ editingItem, onClose, onAdd, onUpdate,
   const [categoryId, setCategoryId] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [note, setNote] = useState("");
+  const transactionLabel = type === "income" ? "thu nhập" : "chi tiêu";
 
   // Load editing data
   useEffect(() => {
@@ -79,16 +80,16 @@ export default function TransactionForm({ editingItem, onClose, onAdd, onUpdate,
           color: "#1f2937",
           fontWeight: '600'
         }}>
-          {editingItem ? "Sửa khoản chi" : "Thêm khoản chi mới"}
+          {editingItem ? `Sửa khoản ${transactionLabel}` : `Thêm khoản ${transactionLabel} mới`}
         </h3>
 
         {/* Name */}
         <div style={{ marginBottom: '16px' }}>
-          <label style={{ display: 'block', color: '#6b7280', fontSize: '14px', marginBottom: '4px' }}>Tên khoản chi *</label>
+          <label style={{ display: 'block', color: '#6b7280', fontSize: '14px', marginBottom: '4px' }}>Tên khoản {transactionLabel} *</label>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Ví dụ: Ăn sáng, xăng xe..."
+            placeholder={type === "income" ? "Ví dụ: Lương tháng 6, Thưởng..." : "Ví dụ: Ăn sáng, Xăng xe..."}
             style={{ 
               width: "100%", 
               padding: "12px 16px", 
@@ -173,7 +174,7 @@ export default function TransactionForm({ editingItem, onClose, onAdd, onUpdate,
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="Chi tiết giao dịch (tùy chọn)..."
+            placeholder={type === "income" ? "Chi tiết khoản thu nhập..." : "Chi tiết khoản chi tiêu..."}
             rows={3}
             style={{ 
               width: "100%", 

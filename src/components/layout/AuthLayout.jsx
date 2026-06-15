@@ -17,7 +17,7 @@ export default function AuthLayout({ children }) {
         
         {/* Logo + App Name */}
         <div style={{ textAlign: "center", marginBottom: "20px" }}>
-          <h2>💰 Finance App</h2>
+          <h2>Finance Manager</h2>
         </div>
 
         {children}

@@ -27,7 +27,7 @@ export default function Sidebar() {
         left: 0,
         top: 0,
         bottom: 0,
-        width: 240,
+        width: 250,
         background: "#0f172a",
         color: "#e2e8f0",
         padding: 20,
@@ -56,10 +56,7 @@ export default function Sidebar() {
           </div>
           <div>
             <div style={{ fontSize: 18, fontWeight: 900, lineHeight: 1.1, color: "#f8fafc" }}>
-              WealthSync
-            </div>
-            <div style={{ fontSize: 12, color: "#94a3b8", fontWeight: 700 }}>
-              Wealth Management
+              Finance Manager 
             </div>
           </div>
         </div>
@@ -90,32 +87,7 @@ export default function Sidebar() {
           ))}
         </nav>
       </div>
-
-      {/* Footer */}
-      <div style={{ paddingTop: 14 }}>
-        <div
-          style={{
-            borderRadius: 16,
-            border: "1px solid rgba(148,163,184,0.25)",
-            background: "rgba(2,6,23,0.35)",
-            padding: 12,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <img
-              src={footerUser.avatar}
-              alt="avatar"
-              style={{ width: 36, height: 36, borderRadius: 999, objectFit: "cover" }}
-            />
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 900, fontSize: 13, color: "#e2e8f0" }}>{footerUser.name}</div>
-              <div style={{ fontWeight: 700, fontSize: 12, color: "#94a3b8", marginTop: 2 }}>
-                {footerUser.plan}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      
     </aside>
   );
 }

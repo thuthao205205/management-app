@@ -150,7 +150,7 @@ export default function Register() {
             height: 46,
             border: "none",
             borderRadius: 12,
-            background: isValid ? "#3b82f6" : "#93c5fd",
+            background: isValid ? "#2563eb" : "#93c5fd",
             color: "#fff",
             fontWeight: 700,
             cursor: isValid ? "pointer" : "not-allowed"

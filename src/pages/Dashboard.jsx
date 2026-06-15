@@ -4,22 +4,25 @@ import { useAuth } from "../context/AuthContext";
 import { Link } from "react-router-dom";
 import { getTransactions } from "../services/transactionService";
 import { getCategories, createDefaultCategories } from "../services/categoryService";
+import { getBudgets } from "../services/budgetService";
+import { generateRecommendations } from "../services/recommendationService";
 
 export default function Dashboard() {
   const [transactions, setTransactions] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [budgets, setBudgets] = useState([]);
   const { user } = useAuth();
-
 
   useEffect(() => {
     if (!user) return;
 
     const loadData = async () => {
-      const [transactionData, categoryData] =
-        await Promise.all([
-          getTransactions(user.uid),
-          getCategories(user.uid),
-        ]);
+      const [transactionData, categoryData, budgetData] = 
+      await Promise.all([
+        getTransactions(user.uid),
+        getCategories(user.uid),
+        getBudgets(user.uid)
+      ]);
 
       // Ensure default categories exist for new users
       if (categoryData.length === 0) {
@@ -33,11 +36,11 @@ export default function Dashboard() {
 
       setTransactions(transactionData);
       setCategories(finalCategories);
+      setBudgets(budgetData);
     };
 
     loadData();
   }, [user]);
-
   const [selectedMonth, setSelectedMonth] = useState(
     new Date().getMonth() + 1
   );
@@ -59,26 +62,24 @@ export default function Dashboard() {
   const formatMoney = (amount) => {
     return amount.toLocaleString("vi-VN") + " đ";
   };
-
   const {
-  totalIncome,
-  totalExpense,
-  balance,
-  recentTransactions,
-  topCategories,
-} = useMemo(() => {
-  const monthIncomes = transactions.filter((item) => {
-    if (item.type !== "income") return false;
+    totalIncome,
+    totalExpense,
+    balance,
+    recentTransactions,
+    topCategories,
+  } = useMemo(() => {
+    const monthIncomes = transactions.filter((item) => {
+      if (item.type !== "income") return false;
 
-    const date = new Date(item.transactionDate);
-    if (Number.isNaN(date.getTime())) return false;
+      const date = new Date(item.transactionDate);
+      if (Number.isNaN(date.getTime())) return false;
 
-    return (
-      date.getMonth() + 1 === selectedMonth &&
-      date.getFullYear() === selectedYear
-    );
-  });
-
+      return (
+        date.getMonth() + 1 === selectedMonth &&
+        date.getFullYear() === selectedYear
+      );
+    });
   const monthExpenses = transactions.filter((item) => {
     if (item.type !== "expense") return false;
 
@@ -146,35 +147,147 @@ export default function Dashboard() {
     topCategories,
   };
 }, [transactions, categories, selectedMonth, selectedYear]);
+const currentMonthIncome = totalIncome;
+const currentMonthExpense = totalExpense;
+const lastMonthData = useMemo(() => {
+  let month = selectedMonth - 1;
+  let year = selectedYear;
 
+  if (month === 0) {
+    month = 12;
+    year--;
+  }
+
+  const lastMonthTransactions =
+    transactions.filter((t) => {
+      const d = new Date(
+        t.transactionDate
+      );
+
+      return (
+        d.getMonth() + 1 === month &&
+        d.getFullYear() === year
+      );
+    });
+
+  const income =
+    lastMonthTransactions
+      .filter(
+        (t) => t.type === "income"
+      )
+      .reduce(
+        (sum, t) =>
+          sum + Number(t.amount),
+        0
+      );
+
+  const expense =
+    lastMonthTransactions
+      .filter(
+        (t) => t.type === "expense"
+      )
+      .reduce(
+        (sum, t) =>
+          sum + Number(t.amount),
+        0
+      );
+
+  return {
+    income,
+    expense
+  };
+}, [
+  transactions,
+  selectedMonth,
+  selectedYear
+]);
+
+  const report = useMemo(() => {
+    const savingRate =
+      totalIncome > 0
+        ? (balance / totalIncome) * 100
+        : 0;
+
+    return {
+      totalIncome,
+      totalExpense,
+      balance,
+      savingRate,
+    };
+  }, [totalIncome, totalExpense, balance]);
+  const categoryStats = useMemo(() => {
+    return topCategories.map(
+      ({ category, amount }) => ({
+        name: category.name,
+        amount,
+        percent:
+          totalExpense > 0
+            ? (amount / totalExpense) * 100
+            : 0,
+      })
+    );
+  }, [topCategories, totalExpense]);
+  const currentBudgets = budgets.filter(
+    (b) =>
+      b.month === selectedMonth &&
+      b.year === selectedYear
+  );
+  const budgetStats = useMemo(() => {
+    return currentBudgets.map((budget) => {
+      const spent = transactions
+        .filter((t) => {
+          const d = new Date(
+            t.transactionDate
+          );
+
+          return (
+            t.type === "expense" &&
+            t.categoryId === budget.categoryId &&
+            d.getMonth() + 1 === budget.month &&
+            d.getFullYear() === budget.year
+          );
+        })
+        .reduce(
+          (sum, t) => sum + Number(t.amount),
+          0
+        );
+
+      const category = categories.find(
+        (c) => c.id === budget.categoryId
+      );
+
+      return {
+        ...budget,
+        spent,
+        categoryName:
+          category?.name || "",
+        usageRate:
+          budget.amount > 0
+            ? (spent / budget.amount) * 100
+            : 0,
+      };
+    });
+  }, [currentBudgets, transactions, categories]);
+  
+  const recommendations = useMemo(
+    () =>
+      generateRecommendations({
+        budgets: budgetStats,
+        report,
+        categoryStats,
+      }),
+    [budgetStats, report, categoryStats, currentMonthIncome, currentMonthExpense, lastMonthData]
+  );
 
   return (
     <Layout>
-      <div
-        style={{
-          padding: "24px",
-        }}
-      >
+      <div className="container">
         {/* Header */}
         <div style={{ marginBottom: "24px" }}>
-          <h1
-            style={{
-              fontSize: "28px",
-              fontWeight: "bold",
-              color: "#111827",
-            }}
-          >
-            Tổng quan tài chính
-          </h1>
-
-          <p
-            style={{
-              color: "#6b7280",
-            }}
-          >
-            Theo dõi thu nhập, chi tiêu và ngân sách của bạn.
-          </p>
+          <h1 className="page-title">Tổng quan tài chính</h1>
+          <p className="page-subtitle">Theo dõi thu nhập, chi tiêu và ngân sách của bạn.</p>
         </div>
+
 
         {/* Bộ chọn tháng năm */}
         <div
@@ -364,9 +477,68 @@ export default function Dashboard() {
             >
               Gợi ý thông minh
             </h3>
+            {recommendations.length === 0 ? (
+              <p
+                style={{
+                  color: "#6b7280",
+                }}
+              >
+                Chưa có gợi ý nào.
+              </p>
+            ) : (
+              recommendations.map(
+                (item, index) => (
+                  <div
+                    key={index}
+                    style={{
+                      marginBottom: "12px",
+                      padding: "12px",
+                      borderRadius: "8px",
+                      background:
+                        item.type ===
+                        "danger"
+                          ? "#fef2f2"
+                          : item.type ===
+                            "warning"
+                          ? "#fffbeb"
+                          : item.type ===
+                            "success"
+                          ? "#f0fdf4"
+                          : "#eff6ff",
+                      border:
+                        item.type ===
+                        "danger"
+                          ? "1px solid #fecaca"
+                          : item.type ===
+                            "warning"
+                          ? "1px solid #fde68a"
+                          : item.type ===
+                            "success"
+                          ? "1px solid #bbf7d0"
+                          : "1px solid #bfdbfe",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontWeight: 600,
+                        marginBottom: "4px",
+                      }}
+                    >
+                      {item.title}
+                    </div>
 
-            {[]?.map(() => null)}
-
+                    <div
+                      style={{
+                        fontSize: "14px",
+                        color: "#4b5563",
+                      }}
+                    >
+                      {item.message}
+                    </div>
+                  </div>
+                )
+              )
+            )}
           </div>
         </div>
 
@@ -402,7 +574,7 @@ export default function Dashboard() {
                   "none",
                 color: "white",
                 background:
-                  "#3b82f6",
+                  "#2563eb",
                 padding:
                   "8px 16px",
                 borderRadius:

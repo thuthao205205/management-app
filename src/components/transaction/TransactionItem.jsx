@@ -1,17 +1,15 @@
 export default function TransactionItem({ item, category, onEdit, onDelete }) {
   return (
-    <div style={{
-      background: "white",
+    <div className="card" style={{
       padding: "16px 20px",
       marginBottom: "1px",
       display: "flex",
       justifyContent: "space-between",
-      alignItems: "center",
-      border: '1px solid #e5e7eb',
-      borderTop: 'none'
+      alignItems: "center"
     }}>
       {/* Left: Icon + Info */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+
         <span style={{ fontSize: '24px' }}>{category?.icon || '💸'}</span>
         <div>
           <div style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '4px' }}>{item.name}</div>
@@ -36,33 +34,17 @@ export default function TransactionItem({ item, category, onEdit, onDelete }) {
         </div>
         <div style={{ display: 'flex', gap: '4px' }}>
           <button 
+            className="btn btn-primary"
             onClick={() => onEdit(item)}
-            style={{
-              background: '#3b82f6',
-              color: 'white',
-              border: 'none',
-              padding: '6px 12px',
-              borderRadius: '4px',
-              fontSize: '12px',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap'
-            }}
+            style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '6px' }}
             title="Sửa"
           >
             ✏️
           </button>
           <button 
+            className="btn btn-danger"
             onClick={() => onDelete(item.id)}
-            style={{
-              background: '#ef4444',
-              color: 'white',
-              border: 'none',
-              padding: '6px 12px',
-              borderRadius: '4px',
-              fontSize: '12px',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap'
-            }}
+            style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '6px' }}
             title="Xóa"
           >
             🗑️
